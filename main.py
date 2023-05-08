@@ -81,9 +81,9 @@ async def get_contacts(limit: int = Query(10, le=300), offset: int = 0, db: Sess
     return contacts
 
 
-@app.get("/contacts/{user_id}", response_model=ContactResponse, tags=["contacts"])
-async def get_contact(user_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    contact = db.query(Contact).filter_by(id=user_id).first()
+@app.get("/contacts/{contact_id}", response_model=ContactResponse, tags=["contacts"])
+async def get_contact(contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    contact = db.query(Contact).filter_by(id=contact_id).first()
     if contact is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     return contact
@@ -101,12 +101,24 @@ async def create_contact(body: ContactModel, db: Session = Depends(get_db)):
     return contact
 
 
-@app.put("/users/{user_id}", response_model=UserResponse, tags=["users"])
-async def update_user(body: UserModel, user_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(id=user_id).first()
-    if user is None:
+@app.put("/contacts/{contact_id}", response_model=ContactResponse, tags=["contacts"])
+async def update_contact(body: ContactModel, contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    contact = db.query(Contact).filter_by(id=contact_id).first()
+    if contact is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    user.first_name = body.first_name
-    user.last_name = body.last_name
+    contact.email = body.email
+    contact.phone = body.phone
+    contact.note = body.note
+    contact.user_id = body.user_id
     db.commit()
-    return user
+    return contact
+
+
+@app.delete("/contacts/{contact_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["contacts"])
+async def delete_contact(contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    contact = db.query(Contact).filter_by(id=contact_id).first()
+    if contact is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    db.delete(contact)
+    db.commit()
+    return None
