@@ -29,7 +29,7 @@ class ContactResponse(BaseModel):
     email: EmailStr
     phone: str
     note: str = None
-    user_id: UserResponse
+    user: UserResponse
 
     class Config:
         orm_mode = True

@@ -91,7 +91,22 @@ async def get_contact(user_id: int = Path(ge=1), db: Session = Depends(get_db)):
 
 @app.post("/contacts", response_model=ContactResponse, tags=["contacts"])
 async def create_contact(body: ContactModel, db: Session = Depends(get_db)):
+    contact_email = db.query(Contact).filter_by(email=body.email).first()
+    contact_phone = db.query(Contact).filter_by(phone=body.phone).first()
+    if contact_email or contact_phone:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Contact is exists")
     contact = Contact(**body.dict())
     db.add(contact)
     db.commit()
     return contact
+
+
+@app.put("/users/{user_id}", response_model=UserResponse, tags=["users"])
+async def update_user(body: UserModel, user_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(id=user_id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    user.first_name = body.first_name
+    user.last_name = body.last_name
+    db.commit()
+    return user
