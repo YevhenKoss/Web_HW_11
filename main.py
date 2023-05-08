@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 
 from fastapi import FastAPI, Depends, HTTPException, status, Path, Query
 from sqlalchemy import text
@@ -78,6 +78,7 @@ async def delete_user(user_id: int = Path(ge=1), db: Session = Depends(get_db)):
 @app.get("/contacts", response_model=List[ContactResponse], tags=["contacts"])
 async def get_contacts(limit: int = Query(10, le=300), offset: int = 0, db: Session = Depends(get_db)):
     contacts = db.query(Contact).limit(limit).offset(offset).all()
+    print(contacts)
     return contacts
 
 
@@ -134,3 +135,37 @@ async def block_contact(body: ContactBlackList, contact_id: int = Path(ge=1), db
     contact.blocked = body.blocked
     db.commit()
     return contact
+
+
+@app.get("/search/", response_model=List[ContactResponse], tags=["search"])
+async def get_contact(find: str = Query(min_length=2, max_length=50), db: Session = Depends(get_db)):
+    users_fn = db.query(User).filter_by(first_name=find).all()
+    users_ln = db.query(User).filter_by(last_name=find).all()
+    users = users_fn + users_ln
+    if users:
+        contacts = []
+        for user in users:
+            contact = db.query(Contact).filter_by(user=user).all()
+            contacts.append(contact[0])
+    else:
+        contacts = db.query(Contact).filter_by(email=find).all()
+    if contacts:
+        return contacts
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
+@app.get("/birthday/", response_model=List[ContactResponse], tags=["birthday"])
+async def get_birthdays(find: str = Query(min_length=2, max_length=50), db: Session = Depends(get_db)):
+    users_fn = db.query(User).filter_by(first_name=find).all()
+    users_ln = db.query(User).filter_by(last_name=find).all()
+    users = users_fn + users_ln
+    contacts = []
+    print(users)
+    for user in users:
+        print(user.id)
+        contact = db.query(Contact).filter_by(user=user).all()
+        contacts.append(contact)
+        print(contacts)
+    # contacts = db.query(Contact).filter_by(user=User.last_name[find], email=find).first()
+    return contacts
