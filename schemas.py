@@ -1,6 +1,7 @@
+import datetime
 from typing import Optional
-
-from pydantic import BaseModel, EmailStr, Field
+from datetime import date
+from pydantic import BaseModel, EmailStr, Field, PastDate
 
 
 class UserModel(BaseModel):
@@ -18,18 +19,29 @@ class UserResponse(BaseModel):
 
 
 class ContactModel(BaseModel):
+    date_of_birth: datetime.date
     email: EmailStr
     phone: str
     note: Optional[str] = None
+    blocked: Optional[bool] = False
     user_id: int = Field(1, gt=0)
 
 
 class ContactResponse(BaseModel):
     id: int = 1
+    date_of_birth: datetime.date
     email: EmailStr
     phone: str
     note: str = None
+    blocked: Optional[bool] = False
     user: UserResponse
+
+    class Config:
+        orm_mode = True
+
+
+class ContactBlackList(BaseModel):
+    blocked: Optional[bool] = False
 
     class Config:
         orm_mode = True

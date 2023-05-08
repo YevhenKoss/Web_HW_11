@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from db import get_db
 from models import User, Contact
-from schemas import UserModel, UserResponse, ContactModel, ContactResponse
+from schemas import UserModel, UserResponse, ContactModel, ContactResponse, ContactBlackList
 
 app = FastAPI()
 
@@ -106,9 +106,11 @@ async def update_contact(body: ContactModel, contact_id: int = Path(ge=1), db: S
     contact = db.query(Contact).filter_by(id=contact_id).first()
     if contact is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    contact.date_of_birth = body.date_of_birth
     contact.email = body.email
     contact.phone = body.phone
     contact.note = body.note
+    contact.blocked = body.blocked
     contact.user_id = body.user_id
     db.commit()
     return contact
@@ -122,3 +124,13 @@ async def delete_contact(contact_id: int = Path(ge=1), db: Session = Depends(get
     db.delete(contact)
     db.commit()
     return None
+
+
+@app.patch("/contacts/{contact_id}/blacklist", response_model=ContactResponse, tags=["contacts"])
+async def block_contact(body: ContactBlackList, contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
+    contact = db.query(Contact).filter_by(id=contact_id).first()
+    if contact is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    contact.blocked = body.blocked
+    db.commit()
+    return contact
