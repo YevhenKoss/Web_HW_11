@@ -1,4 +1,5 @@
-from typing import List, Any
+from typing import List
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, Depends, HTTPException, status, Path, Query
 from sqlalchemy import text
@@ -156,16 +157,21 @@ async def get_contact(find: str = Query(min_length=2, max_length=50), db: Sessio
 
 
 @app.get("/birthday/", response_model=List[ContactResponse], tags=["birthday"])
-async def get_birthdays(find: str = Query(min_length=2, max_length=50), db: Session = Depends(get_db)):
-    users_fn = db.query(User).filter_by(first_name=find).all()
-    users_ln = db.query(User).filter_by(last_name=find).all()
-    users = users_fn + users_ln
-    contacts = []
-    print(users)
-    for user in users:
-        print(user.id)
-        contact = db.query(Contact).filter_by(user=user).all()
-        contacts.append(contact)
-        print(contacts)
-    # contacts = db.query(Contact).filter_by(user=User.last_name[find], email=find).first()
-    return contacts
+async def get_birthdays(limit: int = Query(10, le=300), offset: int = 0, db: Session = Depends(get_db)):
+    end_day = datetime.now() + timedelta(days=7)
+    current_day = datetime.now().date()
+    current_year = datetime.now().strftime("%Y")
+    end_day = end_day.date()
+    contacts = db.query(Contact).all()
+    contacts_id_list = []
+    result = []
+    for contact in contacts:
+        contact_bd_str = contact.date_of_birth.strftime("%Y-%m-%d")
+        contact_bd_new = contact_bd_str.replace(contact.date_of_birth.strftime("%Y"),  current_year)
+        contact_bd_new_dt = datetime.strptime(contact_bd_new, '%Y-%m-%d').date()
+        if current_day <= contact_bd_new_dt <= end_day:
+            contacts_id_list.append(contact.id)
+    for contact_id in contacts_id_list:
+        contact = db.query(Contact).filter_by(id=contact_id).limit(limit).offset(offset).all()
+        result.append(contact[0])
+    return result
