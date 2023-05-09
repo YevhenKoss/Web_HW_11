@@ -1,13 +1,15 @@
-from typing import List
 from datetime import datetime, timedelta
+from typing import List
 
 from fastapi import FastAPI, Depends, HTTPException, status, Path, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from db import get_db
-from models import User, Contact
-from schemas import UserModel, UserResponse, ContactModel, ContactResponse, ContactBlackList
+from src.database.db import get_db
+from src.database.models import User, Contact
+from src.schemas import UserModel, UserResponse, ContactModel, ContactResponse, ContactBlackList
+from src.routes import users, contacts
+
 
 app = FastAPI()
 
@@ -30,148 +32,7 @@ def healthchecker(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error connecting to the database")
 
 
-@app.get("/users", response_model=List[UserResponse], tags=["users"])
-async def get_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
-    return users
+app.include_router(users.router, prefix="/api")
+app.include_router(contacts.router, prefix="/api")
 
 
-@app.get("/users/{user_id}", response_model=UserResponse, tags=["users"])
-async def get_user(user_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    return user
-
-
-@app.post("/users", response_model=UserResponse, tags=["users"])
-async def create_user(body: UserModel, db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(first_name=body.first_name, last_name=body.last_name).first()
-    if user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User is exists")
-    user = User(**body.dict())
-    db.add(user)
-    db.commit()
-    return user
-
-
-@app.put("/users/{user_id}", response_model=UserResponse, tags=["users"])
-async def update_user(body: UserModel, user_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    user.first_name = body.first_name
-    user.last_name = body.last_name
-    db.commit()
-    return user
-
-
-@app.delete("/users/{user_id}", response_model=UserResponse, tags=["users"])
-async def delete_user(user_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    user = db.query(User).filter_by(id=user_id).first()
-    if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    db.delete(user)
-    db.commit()
-    return user
-
-
-@app.get("/contacts", response_model=List[ContactResponse], tags=["contacts"])
-async def get_contacts(limit: int = Query(10, le=300), offset: int = 0, db: Session = Depends(get_db)):
-    contacts = db.query(Contact).limit(limit).offset(offset).all()
-    print(contacts)
-    return contacts
-
-
-@app.get("/contacts/{contact_id}", response_model=ContactResponse, tags=["contacts"])
-async def get_contact(contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    contact = db.query(Contact).filter_by(id=contact_id).first()
-    if contact is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    return contact
-
-
-@app.post("/contacts", response_model=ContactResponse, tags=["contacts"])
-async def create_contact(body: ContactModel, db: Session = Depends(get_db)):
-    contact_email = db.query(Contact).filter_by(email=body.email).first()
-    contact_phone = db.query(Contact).filter_by(phone=body.phone).first()
-    if contact_email or contact_phone:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Contact is exists")
-    contact = Contact(**body.dict())
-    db.add(contact)
-    db.commit()
-    return contact
-
-
-@app.put("/contacts/{contact_id}", response_model=ContactResponse, tags=["contacts"])
-async def update_contact(body: ContactModel, contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    contact = db.query(Contact).filter_by(id=contact_id).first()
-    if contact is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    contact.date_of_birth = body.date_of_birth
-    contact.email = body.email
-    contact.phone = body.phone
-    contact.note = body.note
-    contact.blocked = body.blocked
-    contact.user_id = body.user_id
-    db.commit()
-    return contact
-
-
-@app.delete("/contacts/{contact_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["contacts"])
-async def delete_contact(contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    contact = db.query(Contact).filter_by(id=contact_id).first()
-    if contact is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    db.delete(contact)
-    db.commit()
-    return None
-
-
-@app.patch("/contacts/{contact_id}/blacklist", response_model=ContactResponse, tags=["contacts"])
-async def block_contact(body: ContactBlackList, contact_id: int = Path(ge=1), db: Session = Depends(get_db)):
-    contact = db.query(Contact).filter_by(id=contact_id).first()
-    if contact is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-    contact.blocked = body.blocked
-    db.commit()
-    return contact
-
-
-@app.get("/search/", response_model=List[ContactResponse], tags=["search"])
-async def get_contact(find: str = Query(min_length=2, max_length=50), db: Session = Depends(get_db)):
-    users_fn = db.query(User).filter_by(first_name=find).all()
-    users_ln = db.query(User).filter_by(last_name=find).all()
-    users = users_fn + users_ln
-    if users:
-        contacts = []
-        for user in users:
-            contact = db.query(Contact).filter_by(user=user).all()
-            contacts.append(contact[0])
-    else:
-        contacts = db.query(Contact).filter_by(email=find).all()
-    if contacts:
-        return contacts
-    else:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-
-
-@app.get("/birthday/", response_model=List[ContactResponse], tags=["birthday"])
-async def get_birthdays(limit: int = Query(10, le=300), offset: int = 0, db: Session = Depends(get_db)):
-    end_day = datetime.now() + timedelta(days=7)
-    current_day = datetime.now().date()
-    current_year = datetime.now().strftime("%Y")
-    end_day = end_day.date()
-    contacts = db.query(Contact).all()
-    contacts_id_list = []
-    result = []
-    for contact in contacts:
-        contact_bd_str = contact.date_of_birth.strftime("%Y-%m-%d")
-        contact_bd_new = contact_bd_str.replace(contact.date_of_birth.strftime("%Y"),  current_year)
-        contact_bd_new_dt = datetime.strptime(contact_bd_new, '%Y-%m-%d').date()
-        if current_day <= contact_bd_new_dt <= end_day:
-            contacts_id_list.append(contact.id)
-    for contact_id in contacts_id_list:
-        contact = db.query(Contact).filter_by(id=contact_id).limit(limit).offset(offset).all()
-        result.append(contact[0])
-    return result

@@ -12,6 +12,8 @@ fastapi = {extras = ["all"], version = "^0.95.1"}
 uvicorn = {extras = ["standard"], version = "^0.22.0"}
 sqlalchemy = "^2.0.12"
 pydantic = {extras = ["email"], version = "^1.10.7"}
+alembic = "^1.10.4"
+psycopg2 = "^2.9.6"
 
 
 [build-system]

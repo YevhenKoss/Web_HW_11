@@ -1,9 +1,7 @@
-from enum import unique
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, func
+from sqlalchemy.orm import relationship, declarative_base
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
-from sqlalchemy.orm import relationship
-
-from db import Base, engine
+Base = declarative_base()
 
 
 class User(Base):
@@ -12,6 +10,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String, index=True)
     last_name = Column(String, index=True)
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
 class Contact(Base):
@@ -25,6 +25,8 @@ class Contact(Base):
     blocked = Column(Boolean, nullable=True, default=False)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", backref="contacts")
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
 
-Base.metadata.create_all(bind=engine)
+

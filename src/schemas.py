@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
-from datetime import date
-from pydantic import BaseModel, EmailStr, Field, PastDate
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserModel(BaseModel):
