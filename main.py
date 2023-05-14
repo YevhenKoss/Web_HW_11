@@ -1,15 +1,9 @@
-from datetime import datetime, timedelta
-from typing import List
-
-from fastapi import FastAPI, Depends, HTTPException, status, Path, Query
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.database.db import get_db
-from src.database.models import User, Contact
-from src.schemas import UserModel, UserResponse, ContactModel, ContactResponse, ContactBlackList
-from src.routes import users, contacts
-
+from src.routes import persons, contacts
 
 app = FastAPI()
 
@@ -32,7 +26,5 @@ def healthchecker(db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="Error connecting to the database")
 
 
-app.include_router(users.router, prefix="/api")
+app.include_router(persons.router, prefix="/api")
 app.include_router(contacts.router, prefix="/api")
-
-

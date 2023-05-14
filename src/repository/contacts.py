@@ -2,8 +2,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from src.database.models import User, Contact
-from src.repository.users import get_user_by_first_name, get_user_by_last_name
+from src.database.models import Person, Contact
+from src.repository.persons import get_person_by_first_name, get_person_by_last_name
 from src.schemas import ContactModel, ContactBlackList
 
 
@@ -42,7 +42,7 @@ async def update(contact_id: int, body: ContactModel, db: Session):
         contact.phone = body.phone
         contact.note = body.note
         contact.blocked = body.blocked
-        contact.user_id = body.user_id
+        contact.person_id = body.person_id
         db.commit()
     return contact
 
@@ -63,8 +63,8 @@ async def block(contact_id: int, body: ContactBlackList, db: Session):
     return contact
 
 
-async def get_contact_by_user(user: User, db: Session):
-    contact = db.query(Contact).filter_by(user=user).all()
+async def get_contact_by_person(person: Person, db: Session):
+    contact = db.query(Contact).filter_by(person=person).all()
     return contact
 
 
@@ -74,14 +74,14 @@ async def get_contacts_by_email(email, db: Session):
 
 
 async def search_contacts(data: str, db: Session):
-    users_fn = await get_user_by_first_name(data, db)
-    users_ln = await get_user_by_last_name(data, db)
-    print(users_fn, users_ln)
-    users = users_fn + users_ln
-    if users:
+    persons_fn = await get_person_by_first_name(data, db)
+    persons_ln = await get_person_by_last_name(data, db)
+    print(persons_fn, persons_ln)
+    persons = persons_fn + persons_ln
+    if persons:
         contacts = []
-        for user in users:
-            contact = await get_contact_by_user(user, db)
+        for person in persons:
+            contact = await get_contact_by_person(person, db)
             contacts.append(contact[0])
     else:
         contacts = await get_contacts_by_email(data, db)

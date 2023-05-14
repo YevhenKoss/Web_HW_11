@@ -4,12 +4,12 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
-class UserModel(BaseModel):
+class PersonModel(BaseModel):
     first_name: str
     last_name: str
 
 
-class UserResponse(BaseModel):
+class PersonResponse(BaseModel):
     id: int
     first_name: str
     last_name: str
@@ -24,7 +24,7 @@ class ContactModel(BaseModel):
     phone: str
     note: Optional[str] = None
     blocked: Optional[bool] = False
-    user_id: int = Field(1, gt=0)
+    person_id: int = Field(1, gt=0)
 
 
 class ContactResponse(BaseModel):
@@ -34,7 +34,7 @@ class ContactResponse(BaseModel):
     phone: str
     note: str = None
     blocked: Optional[bool] = False
-    user: UserResponse
+    person: PersonResponse
 
     class Config:
         orm_mode = True
