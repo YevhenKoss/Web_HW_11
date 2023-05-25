@@ -1,11 +1,31 @@
+import redis.asyncio as redis
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi_limiter import FastAPILimiter
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from fastapi.middleware.cors import CORSMiddleware
 
+from src.conf.config import settings
 from src.database.db import get_db
 from src.routes import persons, contacts, auth
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def startup():
+    r = await redis.Redis(host=settings.redis_host, port=settings.redis_port, db=0)
+    await FastAPILimiter.init(r)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 
 @app.get("/")
