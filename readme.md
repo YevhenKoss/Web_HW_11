@@ -33,3 +33,9 @@ MAIL_PORT=
 MAIL_SERVER=
 
 '''
+Запуск тестів
+
+"""
+bash
+pytest --cov=. --cov-report html
+"""
