@@ -169,7 +169,6 @@ async def search_contacts(user: User, data: str, db: Session):
     """
     persons_fn = await get_person_by_first_name(user.id, data, db)
     persons_ln = await get_person_by_last_name(user.id, data, db)
-    print(persons_fn, persons_ln)
     persons = persons_fn + persons_ln
     if persons:
         contacts = []
@@ -179,7 +178,6 @@ async def search_contacts(user: User, data: str, db: Session):
     else:
         contacts = await get_contacts_by_email(user.id, data, db)
     if contacts:
-        print(contacts)
         return contacts
 
 
