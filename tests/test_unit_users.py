@@ -1,16 +1,16 @@
 import unittest
-from unittest.mock import MagicMock, patch
-import logging
+from unittest.mock import MagicMock
+
 from sqlalchemy.orm import Session
 
 from src.database.models import User
-from src.schemas import UserModel
 from src.repository.users import (
     get_user_by_email,
     create_user,
     confirmed_email,
     update_token, update_avatar
 )
+from src.schemas import UserModel
 
 
 class TestUsers(unittest.IsolatedAsyncioTestCase):

@@ -1,14 +1,9 @@
-import datetime
 import unittest
 from unittest.mock import MagicMock
-# from datetime import datetime
-from sqlalchemy.orm import Session
 
-from src.database.models import Contact, User, Person
 from src.repository.persons import get_persons, get_person_by_id, get_person_by_name, create, update, remove, \
     get_person_by_first_name, get_person_by_last_name
-
-from src.schemas import ContactModel, ContactBlackList, PersonModel
+from src.schemas import PersonModel
 
 
 class TestPersons(unittest.IsolatedAsyncioTestCase):
@@ -37,7 +32,8 @@ class TestPersons(unittest.IsolatedAsyncioTestCase):
         self.db.query.return_value.filter_by.return_value.first.return_value = expected_person
         person = await get_person_by_name("Jon", "Doe", self.db, self.user)
         self.db.query.assert_called_once()
-        self.db.query.return_value.filter_by.assert_called_once_with(first_name="Jon", last_name="Doe", user_id=self.user.id)
+        self.db.query.return_value.filter_by.assert_called_once_with(first_name="Jon", last_name="Doe",
+                                                                     user_id=self.user.id)
         self.db.query.return_value.filter_by.return_value.first.assert_called_once()
         self.assertEqual(person, expected_person)
 
