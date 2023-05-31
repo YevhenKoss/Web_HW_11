@@ -1,14 +1,11 @@
 import datetime
 import unittest
 from unittest.mock import MagicMock
-# from datetime import datetime
-from sqlalchemy.orm import Session
 
-from src.database.models import Contact, User, Person
+from src.database.models import Contact, Person
 from src.repository.contacts import get_contacts, get_contact_by_id, get_contact_by_email, get_contact_by_phone, create, \
-    update, remove, block, get_contact_by_person, get_contacts_by_email, search_contacts, get_contacts_hb_id_list, \
+    update, remove, block, get_contact_by_person, get_contacts_by_email, get_contacts_hb_id_list, \
     get_contacts_hb
-
 from src.schemas import ContactModel, ContactBlackList
 
 
@@ -19,7 +16,6 @@ class TestContacts(unittest.IsolatedAsyncioTestCase):
         self.body = MagicMock()
         self.person = Person(first_name="Jon", last_name="Doe")
         self.data = MagicMock(id=1)
-
 
     async def test_get_contacts(self):
         contacts = [Contact() for _ in range(5)]
@@ -152,5 +148,3 @@ class TestContacts(unittest.IsolatedAsyncioTestCase):
         self.db.query.return_value.filter_by.return_value.limit.return_value.offset.return_value.all.return_value = expected_contacts
         contacts = await get_contacts_hb(self.user, id_list, 10, 0, self.db)
         self.assertEqual(contacts, expected_contacts)
-
-
