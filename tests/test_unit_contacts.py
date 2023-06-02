@@ -1,13 +1,13 @@
 import datetime
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from src.database.models import Contact, Person
 from src.repository.contacts import get_contacts, get_contact_by_id, get_contact_by_email, get_contact_by_phone, create, \
     update, remove, block, get_contact_by_person, get_contacts_by_email, get_contacts_hb_id_list, \
-    get_contacts_hb
+    get_contacts_hb, search_contacts
 from src.schemas import ContactModel, ContactBlackList
-
+from src.repository.persons import get_person_by_first_name, get_person_by_last_name
 
 class TestContacts(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
@@ -15,7 +15,7 @@ class TestContacts(unittest.IsolatedAsyncioTestCase):
         self.db = MagicMock()
         self.body = MagicMock()
         self.person = Person(first_name="Jon", last_name="Doe")
-        self.data = MagicMock(id=1)
+        self.data = MagicMock(return_value="Jon")
 
     async def test_get_contacts(self):
         contacts = [Contact() for _ in range(5)]
@@ -115,22 +115,40 @@ class TestContacts(unittest.IsolatedAsyncioTestCase):
         contacts = await get_contacts_by_email(self.user, "test@email.com", self.db)
         self.assertEqual(contacts, expected_contacts)
 
-    # async def test_search_contacts(self):
-    #     expected_contacts = [MagicMock(id=1)]
-    #     persons_fn = [MagicMock(id=1)]
-    #     persons_ln = []
-    #     self.db.query.return_value.filter_by.return_value.all.return_value = expected_contacts
-    #
-    #     get_person_by_first_name_mock = MagicMock()
-    #     get_person_by_first_name_mock.return_value = persons_fn
-    #     search_contacts.get_person_by_first_name = get_person_by_first_name_mock
-    #     search_contacts.get_person_by_last_name = MagicMock(return_value=persons_ln)
-    #     get_contact_by_person_mock = MagicMock()
-    #     get_contact_by_person_mock.return_value = [expected_contacts[0]]
-    #     search_contacts.get_contact_by_person = get_contact_by_person_mock
-    #     contacts = await search_contacts(self.user, self.data, self.db)
-    #     search_contacts.get_person_by_last_name.assert_not_called()
-    #     self.assertEqual(contacts, expected_contacts)
+    async def test_search_contacts(self):
+        expected_contacts = None
+
+        # Mock the functions called within search_contacts
+        get_person_by_first_name_mock = MagicMock(return_value=["person1"])
+        get_person_by_last_name_mock = MagicMock(return_value=[None])
+        get_contact_by_person_mock = MagicMock(side_effect=["contact1"])
+        get_contacts_by_email_mock = MagicMock(return_value=None)
+
+        # Patch the functions with the mocks
+        with patch("src.repository.persons.get_person_by_first_name", get_person_by_first_name_mock), \
+                patch("src.repository.persons.get_person_by_last_name", get_person_by_last_name_mock), \
+                patch("src.repository.contacts.get_contact_by_person", get_contact_by_person_mock), \
+                patch("src.repository.contacts.get_contacts_by_email", get_contacts_by_email_mock):
+            contacts = await search_contacts(self.user, self.data, self.db)
+            get_person_by_last_name_mock.assert_not_called()
+            get_contacts_by_email_mock.assert_not_called()
+            self.assertEqual(contacts, expected_contacts)
+
+        # expected_contacts = [MagicMock(id=1)]
+        # persons_fn = [MagicMock(id=1)]
+        # persons_ln = []
+        # self.db.query.return_value.filter_by.return_value.all.return_value = expected_contacts
+        #
+        # get_person_by_first_name_mock = MagicMock()
+        # get_person_by_first_name_mock.return_value = persons_fn
+        # search_contacts.get_person_by_first_name = get_person_by_first_name_mock
+        # search_contacts.get_person_by_last_name = MagicMock(return_value=persons_ln)
+        # get_contact_by_person_mock = MagicMock()
+        # get_contact_by_person_mock.return_value = [expected_contacts[0]]
+        # search_contacts.get_contact_by_person = get_contact_by_person_mock
+        # contacts = await search_contacts(self.user, self.data, self.db)
+        # search_contacts.get_person_by_last_name.assert_not_called()
+        # self.assertEqual(contacts, expected_contacts)
 
     async def test_get_contacts_hb_id_list(self):
         expected_contact_ids = [1]

@@ -167,8 +167,8 @@ async def search_contacts(user: User, data: str, db: Session):
     :param db: Session: Pass the database session to the function
     :return: A list of contacts that match the search criteria
     """
-    persons_fn = await get_person_by_first_name(user.id, data, db)
-    persons_ln = await get_person_by_last_name(user.id, data, db)
+    persons_fn = await get_person_by_first_name(data, db, user.id)
+    persons_ln = await get_person_by_last_name(data, db, user.id)
     persons = persons_fn + persons_ln
     if persons:
         contacts = []
